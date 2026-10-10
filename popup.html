@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Spider Pet</title>
+  </head>
+  <body>
+    <main>
+      <h1>Web Spider Pet</h1>
+      <p class="intro">线框蜘蛛，沿真实链接探索网页。</p>
+      <div class="status"><strong id="state">连接中…</strong><span id="count">—</span></div>
+      <p id="note" role="status">正在读取当前页面。</p>
+      <p id="target"></p>
+      <button id="start" disabled>开始探索</button>
+      <button id="explore" class="secondary" disabled>只走一个链接</button>
+      <button id="stop" class="secondary" disabled>停止</button>
+      <p class="footnote">连续走访当前可见链接，走完即停。不点击、不跳转。</p>
+    </main>
+    <script type="module" src="/src/popup/index.ts"></script>
+  </body>
+</html>

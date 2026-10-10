@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Web Spider Pet",
+  "version": "0.1.0",
+  "description": "一只理解真实网页链接位置的小蜘蛛。手动探索，不自动点击。",
+  "permissions": ["activeTab"],
+  "action": {
+    "default_title": "Web Spider Pet",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}

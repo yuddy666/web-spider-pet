@@ -19,7 +19,13 @@ function startSpider() {
   let movementFrame = 0;
   let nextTargetFrame = 0;
   let layoutFrame = 0;
+  let scrollFrame = 0;
+  let previousScrollTime = 0;
+  let lastScrollScan = 0;
+  let scrollRemainder = 0;
+  let blockedScrollTime = 0;
   let previousTime = 0;
+  const scrollSpeed = 90;
   const sessionLimit = 50;
 
   function draw() { overlay.draw(position, state, target); }
@@ -31,29 +37,82 @@ function startSpider() {
     draw();
   }
 
-  function scan() {
+  function scan(report = true) {
     const resumeState = state;
     const resumeNote = note;
-    transition('SCANNING', '正在测量当前可见链接');
+    if (report) transition('SCANNING', '正在测量当前可见链接');
     targets = scanLinks();
     overlay.setLinks(targets);
-    transition(resumeState, resumeNote);
+    if (report) { state = resumeState; note = resumeNote; }
+    draw();
   }
 
   function stop(reason: string) {
     cancelAnimationFrame(movementFrame);
     cancelAnimationFrame(nextTargetFrame);
+    cancelAnimationFrame(scrollFrame);
     movementFrame = 0;
     nextTargetFrame = 0;
+    scrollFrame = 0;
     continuous = false;
     motion.freeze();
     target = null;
     transition('IDLE', reason);
   }
 
-  function chooseTarget() {
+  function remainingPage() {
+    const root = document.scrollingElement;
+    return root ? Math.max(0, root.scrollHeight - root.clientHeight - root.scrollTop) : 0;
+  }
+
+  function beginScroll() {
+    motion.freeze();
     target = null;
-    scan();
+    previousScrollTime = performance.now();
+    lastScrollScan = previousScrollTime;
+    scrollRemainder = 0;
+    blockedScrollTime = 0;
+    transition('SCROLLING', '当前区域已探索，正在缓慢向下寻找新链接');
+    scrollFrame = requestAnimationFrame(scrollDown);
+  }
+
+  function scrollDown(time: number) {
+    scrollFrame = 0;
+    if (!continuous || state !== 'SCROLLING') return;
+    const dt = Math.min((time - previousScrollTime) / 1000, 0.04);
+    previousScrollTime = time;
+    // Re-scan while the document moves, including pages with no links at all.
+    if (time - lastScrollScan >= 80 || remainingPage() <= 1) {
+      scan(false);
+      lastScrollScan = time;
+      if (targets.some(item => !visited.has(item.element))) { chooseTarget(true); return; }
+      if (remainingPage() <= 1) { stop(`已到达页面底部，共到达 ${arrivedLinks} 个链接`); return; }
+    }
+    const budget = scrollSpeed * dt + scrollRemainder;
+    const pixels = Math.floor(budget);
+    scrollRemainder = budget - pixels;
+    const before = window.scrollY;
+    if (pixels > 0) {
+      // Explicit instant behavior avoids a site's CSS smooth-scroll queue.
+      // Each frame moves only a few pixels; rAF supplies the smooth motion.
+      window.scrollBy({ left: 0, top: Math.min(pixels, remainingPage()), behavior: 'instant' });
+    }
+    blockedScrollTime = window.scrollY > before ? 0 : blockedScrollTime + dt;
+    if (blockedScrollTime >= 0.75) { stop('页面阻止了向下滚动，探索已停止'); return; }
+    scrollFrame = requestAnimationFrame(scrollDown);
+  }
+
+  function chooseTarget(measured = false) {
+    // Layout changes can arrive between ARRIVED and the next target's rAF.
+    // Retargeting must replace both pending callbacks, never create two loops.
+    cancelAnimationFrame(movementFrame);
+    cancelAnimationFrame(nextTargetFrame);
+    movementFrame = 0;
+    nextTargetFrame = 0;
+    cancelAnimationFrame(scrollFrame);
+    scrollFrame = 0;
+    target = null;
+    if (!measured) scan();
     const unvisited = targets.filter((item) => !visited.has(item.element));
     const candidates = continuous ? unvisited : (unvisited.length ? unvisited : targets);
     target = candidates.reduce<LinkTarget | null>((closest, item) => {
@@ -61,6 +120,8 @@ function startSpider() {
       return !closest || distance(item) < distance(closest) ? item : closest;
     }, null);
     if (!target) {
+      if (continuous && remainingPage() > 1) { beginScroll(); return; }
+      if (continuous) { stop(`已到达页面底部，共到达 ${arrivedLinks} 个链接`); return; }
       const reason = targets.length ? `当前可见链接已探索完，共到达 ${arrivedLinks} 个链接` : '当前视口没有可探索的链接';
       stop(reason);
       return;
@@ -81,7 +142,12 @@ function startSpider() {
   function move(time: number) {
     if (!target) return;
     const updated = measureLink(target.element);
-    if (!updated) { stop('目标已移除、被遮挡或离开视口，探索已停止'); return; }
+    if (!updated) {
+      motion.freeze();
+      if (continuous) chooseTarget();
+      else stop('目标已移除、被遮挡或离开视口，探索已停止');
+      return;
+    }
     target = updated;
     const arrived = motion.advance(target.point, Math.min((time - previousTime) / 1000, 0.04));
     previousTime = time;
@@ -108,10 +174,18 @@ function startSpider() {
     if (layoutFrame) return;
     layoutFrame = requestAnimationFrame(() => {
       layoutFrame = 0;
-      scan();
+      // The scrolling loop owns its 80 ms scans; avoid scanning all anchors
+      // separately for every scroll event. The spider's viewport pose is fixed.
+      if (state !== 'SCROLLING') scan(false);
       if (target) {
         const updated = measureLink(target.element);
-        if (!updated) stop('目标已离开可见区域，探索已停止');
+        if (!updated) {
+          if (continuous) {
+            cancelAnimationFrame(movementFrame);
+            motion.freeze();
+            chooseTarget();
+          } else stop('目标已离开可见区域，探索已停止');
+        }
         else {
           target = updated;
           if (state === 'ARRIVED' && !continuous && Math.hypot(target.point.x - position.x, target.point.y - position.y) > 1) {

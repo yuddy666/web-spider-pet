@@ -36,7 +36,7 @@ Chromium 扩展中的蜘蛛 → 真正的 Web Crawler → macOS 桌宠 → 可�
 5. 用简单的原生 SVG / Canvas 临时蜘蛛图形证明空间理解。
 6. 蜘蛛能选择可见链接，并平滑移动到链接附近。
 7. 页面滚动、尺寸变化后重新测量；移动期间跟随真实目标位置。
-8. 控制台报告 `IDLE / SCANNING / MOVING / ARRIVED`。
+8. 控制台报告 `IDLE / SCANNING / MOVING / ARRIVED / SCROLLING`。
 9. 不自动点击链接；移动到链接不代表访问链接或请求成功。
 
 ## 开发约束
@@ -46,7 +46,7 @@ Chromium 扩展中的蜘蛛 → 真正的 Web Crawler → macOS 桌宠 → 可�
 - 暂无 AI、后端、跨站爬虫或 macOS 原生程序。
 - 保持小而可验证的模块，不提前搭建插件系统、任务调度或泛化 Agent 架构。
 - 不发网络请求模拟工作，不伪造 404 / 403 / 429 或加载状态。
-- 探索由用户触发。默认静止；用户点击“开始探索”后可连续走访当前可见链接，每个 DOM 链接每轮最多抵达一次，本轮最多 50 个。走完、失去目标或用户停止时结束。单次模式抵达后停止。
+- 探索由用户触发。默认静止；“开始探索”连续走访真实可见链接，每个 DOM 链接每轮最多抵达一次，本轮最多 50 个。当前视口走完后基础自动向下探索：rAF + window.scrollBy，90 px/s；每 80 ms 重测链接，发现新目标即恢复爬行。底部无新目标、达到上限、滚动受阻或用户停止时结束；连续模式丢失目标后重选。单次模式不滚动，抵达 / 丢失目标后停止。
 - 当前视觉参考为用户提供的线框蜘蛛视频：细长的关节腿、方向转动、真实链接定位框。腿使用两段定长 IK 与固定视口脚尖，四足分组交替；步态随实际移动 / 转向推进。身体速度与换脚进度耦合，轻微重心偏移、平滑 heading、到达减速。停止时完整姿态冻结，不添加装饰待机动作。
 - 链接框来自真实 DOM 测量；连接线只表示当前选择的移动目标，不能伪装成已发现的网页关系或已完成的网络请求。
 - Overlay 不拦截网页点击，不修改链接，不覆盖页面的全局事件处理器。
@@ -58,7 +58,9 @@ Chromium 扩展中的蜘蛛 → 真正的 Web Crawler → macOS 桌宠 → 可�
 
 - `src/content/`：DOM 测量、SVG overlay、蜘蛛状态与移动。`locomotion.ts` 独立处理 two-bone IK、脚尖固定和身体 steering；renderer 不能推进步态。
 - `npm test` 验证定长腿、落地脚尖不滑动、至少四足支撑、平滑转向、抵达和停步。
-- 所有蜘蛛姿态均使用 viewport coordinates；scroll delta 不加到 body / foot 上，DOM 通过 getBoundingClientRect 重新测量。不要混用 document 坐标。
+- 所有蜘蛛姿态（body、hip、foot、from/to）均使用 viewport coordinates；scroll delta 修正为零，DOM 通过 getBoundingClientRect 重新测量。不要混用 document 坐标，不能在滚动时重置脚尖。
+- 自动滚动只向下且只操作根文档。底部由 scrollingElement 的 scrollHeight - clientHeight - scrollTop <= 1 判断，最终扫描后无新目标才结束；滚动受阻必须停止。停止探索同时取消移动、滚动、后续选目标。
+- SCROLLING 只表示真实页面滚动；滚动本身不推进 walking loop。暂不做抓住页面边缘拖动、横向滚动或复杂用户控制权仲裁。
 - `src/popup/`：用户控制与当前状态显示。
 - `src/shared.ts`：扩展消息和状态类型。
 - `public/manifest.json`：MV3 清单。

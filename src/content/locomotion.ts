@@ -6,7 +6,7 @@ export const LEG_LENGTHS = [
 ];
 const lateral = [40, 52, 52, 40];
 const longitudinal = [-42, -16, 19, 43];
-const strideTravel = 22;
+const strideTravel = 18;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const angleDifference = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
@@ -63,13 +63,13 @@ export function createLocomotion(position: Point) {
     const maximum = lengths.upper + lengths.lower - 0.5;
     return { side, pair, group: (pair + (side < 0 ? 1 : 0)) % 2, hip,
       knee: solveKnee(hip, foot, lengths.upper, lengths.lower, side * (pair < 2 ? 1 : -1)),
-      foot, ...lengths, maximum, comfortable: maximum * 0.80,
+      foot, ...lengths, maximum, comfortable: maximum * 0.75,
       progress: 1, from: { ...foot }, to: { ...foot } };
   }));
 
   function home(leg: LegPose, turn: number): Point {
     // A turning body's outer legs reach a little further, its inner legs closer.
-    const extra = clamp(turn * leg.side * 4, -5, 5);
+    const extra = clamp(-turn * leg.side * 4, -5, 5);
     const planted = world({ x: leg.side * (lateral[leg.pair] + extra), y: longitudinal[leg.pair] });
     const forward = rotate({ x: 0, y: -16 });
     return { x: planted.x + forward.x, y: planted.y + forward.y };
@@ -118,14 +118,16 @@ export function createLocomotion(position: Point) {
       // Keep all feet reachable, including swinging feet. A safety constraint
       // reduces body travel instead of stretching bones or dragging support feet.
       let fraction = 1;
-      for (let attempt = 0; attempt < 12; attempt++) {
+      let reachable = false;
+      for (let attempt = 0; attempt < 24; attempt++) {
         const candidate = { x: center.x + delta.x * fraction, y: center.y + delta.y * fraction };
         if (legs.every(leg => {
           const reach = distance(hipAt(leg, candidate, heading + rotation * fraction), leg.foot);
           return reach < leg.maximum && reach > Math.abs(leg.upper - leg.lower) + 1;
-        })) break;
+        })) { reachable = true; break; }
         fraction *= 0.5;
       }
+      if (!reachable) fraction = 0;
       position.x += step * vx * fraction;
       position.y += step * vy * fraction;
       heading += rotation * fraction;

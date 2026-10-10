@@ -9,11 +9,15 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 let frames = 0;
 let plantedFrames = 0;
 let liftFrames = 0;
+let seed = 27;
+const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+const routes = [{ x: 850, y: 430 }, { x: 150, y: 430 }, { x: 200, y: 90 }, { x: 205, y: 110 }, { x: 205, y: 112 }, { x: 800, y: 100 },
+  ...Array.from({ length: 24 }, () => ({ x: 90 + random() * 1000, y: 90 + random() * 550 }))];
 for (const dt of [1 / 60, 1 / 30, 0.04]) {
   const position = { x: 100, y: 120 };
   const motion = createLocomotion(position);
   // Long travel followed by reversals and tight turns catches support deadlocks.
-  for (const target of [{ x: 850, y: 430 }, { x: 150, y: 430 }, { x: 200, y: 90 }, { x: 205, y: 110 }, { x: 205, y: 112 }, { x: 800, y: 100 }]) {
+  for (const target of routes) {
     let arrived = false;
     for (let frame = 0; frame < 18000 && !arrived; frame++) {
       const before = motion.legs.map(leg => ({ foot: { ...leg.foot }, progress: leg.progress }));

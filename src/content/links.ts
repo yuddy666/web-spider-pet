@@ -28,12 +28,14 @@ export function measureLink(element: HTMLAnchorElement): LinkTarget | null {
   const center = { x: (left + right) / 2, y: (top + bottom) / 2 };
   const hit = document.elementFromPoint(center.x, center.y);
   if (!hit || (hit !== element && !element.contains(hit))) return null;
+  const marginX = Math.min(90, innerWidth / 2);
+  const marginY = Math.min(90, innerHeight / 2);
   return {
     element,
     bounds: { x: left, y: top, width: right - left, height: bottom - top },
     point: {
-      x: Math.max(32, Math.min(innerWidth - 32, center.x)),
-      y: Math.max(32, Math.min(innerHeight - 32, top - 30)),
+      x: Math.max(marginX, Math.min(innerWidth - marginX, center.x)),
+      y: Math.max(marginY, Math.min(innerHeight - marginY, top - 30)),
     },
     label: element.textContent?.trim().replace(/\s+/g, ' ').slice(0, 80) || element.hostname,
   };

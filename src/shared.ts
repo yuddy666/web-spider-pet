@@ -1,4 +1,4 @@
-export type SpiderState = 'IDLE' | 'SCANNING' | 'MOVING' | 'ARRIVED';
+export type SpiderState = 'IDLE' | 'SCANNING' | 'MOVING' | 'ARRIVED' | 'SCROLLING';
 export type SpiderCommand = { type: 'SPIDER_STATUS' | 'SPIDER_SCAN' | 'SPIDER_EXPLORE' | 'SPIDER_START' | 'SPIDER_STOP' };
 export interface SpiderStatus {
   state: SpiderState;

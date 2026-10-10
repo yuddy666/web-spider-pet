@@ -18,7 +18,7 @@
 <body>
   <main>
     <h1>Web Spider Pet 空间测试</h1>
-    <p>请在独立 Chrome 打开此页，点击右上角 W →“开始探索”。线框蜘蛛会依次爬向可见链接，走完即停，不会打开它们。</p>
+    <p>请在独立 Chrome 打开此页，点击右上角 W →“开始探索”。IK 蜘蛛会爬向真实链接，当前区域走完后缓慢向下探索长页面，不会打开链接。</p>
     <section>
       <a id="first" href="https://example.com/">目标 A：Example</a>
       <a id="second" href="https://developer.chrome.com/">目标 B：Chrome 文档</a>
@@ -26,13 +26,13 @@
       <a class="hidden" href="https://example.com/hidden">隐藏链接，不应成为目标</a>
       <a href="mailto:test@example.com">邮件链接，不应成为目标</a>
     </section>
-    <p>八条腿的动作来自实际移动，链接框来自真实网页位置。只想走一步，可以选择“只走一个链接”；“停止”会立即结束本轮。</p>
+    <p>脚尖落地后固定，八条 IK 腿的换脚来自实际移动与转向，链接框来自真实网页位置。只想走一步，可以选择“只走一个链接”；“停止”会立即结束本轮。</p>
     <section class="scrollbox">
       <a href="https://example.com/nested">内层滚动容器里的链接</a>
       <div style="height: 250px"></div>
       <a href="https://example.com/nested-bottom">内层底部链接</a>
     </section>
-    <div class="spacer">向下滚动，发现另一组真实链接。</div>
+    <div class="spacer">当前区域走完后，页面会缓慢向下滚动，发现另一组真实链接。</div>
     <section id="lower">
       <h2>另一片网页空间</h2>
       <a href="https://vite.dev/">目标 D：Vite</a>

@@ -1,12 +1,14 @@
 import { isSpiderCommand, type SpiderStatus, type SpiderState } from '../shared';
 import { measureLink, scanLinks, type LinkTarget, type Point } from './links';
 import { createOverlay } from './overlay';
+import { createLocomotion } from './locomotion';
 
 if (!document.querySelector('web-spider-pet-overlay')) startSpider();
 
 function startSpider() {
-  const overlay = createOverlay();
   const position: Point = { x: Math.min(100, innerWidth / 2), y: Math.min(120, innerHeight / 2) };
+  const motion = createLocomotion(position);
+  const overlay = createOverlay(motion);
   let state: SpiderState = 'IDLE';
   let targets: LinkTarget[] = [];
   let target: LinkTarget | null = null;
@@ -18,7 +20,6 @@ function startSpider() {
   let nextTargetFrame = 0;
   let layoutFrame = 0;
   let previousTime = 0;
-  const speed = 125;
   const sessionLimit = 50;
 
   function draw() { overlay.draw(position, state, target); }
@@ -45,6 +46,7 @@ function startSpider() {
     movementFrame = 0;
     nextTargetFrame = 0;
     continuous = false;
+    motion.freeze();
     target = null;
     transition('IDLE', reason);
   }
@@ -81,13 +83,10 @@ function startSpider() {
     const updated = measureLink(target.element);
     if (!updated) { stop('目标已移除、被遮挡或离开视口，探索已停止'); return; }
     target = updated;
-    const dx = target.point.x - position.x;
-    const dy = target.point.y - position.y;
-    const distance = Math.hypot(dx, dy);
-    const step = speed * Math.min((time - previousTime) / 1000, 0.05);
+    const arrived = motion.advance(target.point, Math.min((time - previousTime) / 1000, 0.04));
     previousTime = time;
-    if (distance <= step) {
-      Object.assign(position, target.point);
+    if (arrived) {
+      motion.freeze();
       visited.add(target.element);
       arrivedLinks += 1;
       movementFrame = 0;
@@ -101,8 +100,6 @@ function startSpider() {
       }
       return;
     }
-    position.x += dx / distance * step;
-    position.y += dy / distance * step;
     draw();
     movementFrame = requestAnimationFrame(move);
   }
@@ -111,8 +108,6 @@ function startSpider() {
     if (layoutFrame) return;
     layoutFrame = requestAnimationFrame(() => {
       layoutFrame = 0;
-      position.x = Math.max(32, Math.min(innerWidth - 32, position.x));
-      position.y = Math.max(32, Math.min(innerHeight - 32, position.y));
       scan();
       if (target) {
         const updated = measureLink(target.element);

@@ -1,97 +1,106 @@
-# Web Spider Pet
+# Web Spider Pet 🕷️
 
-“网络爬虫本身的具象化桌宠”：一只非写实的机械 / 数字蜘蛛，动作来自真实程序状态。
+**A tiny spider that actually crawls the web.**  
+*Not just a crawler — the crawler is the spider.*
 
-目前只有 **Chromium 浏览器扩展 MVP**：验证蜘蛛能理解网页空间、走到真实 DOM 链接附近。没有 AI、后端、网络请求、自动点击、跨站爬虫或桌面程序。
+![version](https://img.shields.io/badge/version-v0.1.0-blue)
+![license](https://img.shields.io/badge/license-MIT-green)
+![Chromium](https://img.shields.io/badge/Chromium-Manifest%20V3-orange)
 
-## 演示视频
+Web Spider Pet 把“网络爬虫”这个比喻重新变回一只真的会爬的蜘蛛：它读取真实网页中的链接位置，用程序化 IK 腿在页面上移动，当前区域探索完以后会继续一边爬、一边慢慢向下滚动寻找新的链接。
 
-[观看滚动爬行演示（MP4，约 30 秒）](docs/demo/scroll-crawling.mp4)
+v0.1 还是一个 **Chromium 浏览器扩展原型**。它现在会在页面上探索，但**不会自动点击链接、不会跨页面导航、没有 AI，也不会把网页内容上传到服务器**。
 
-[![滚动期间持续使用 IK 支撑和迈腿](docs/demo/scroll-crawling.png)](docs/demo/scroll-crawling.mp4)
+> It crawls the page, not the network — yet.
 
-实际速度录制：走向三个真实 DOM 链接，边滚动边爬行，最后点击停止并保持静止。录制页仅替代扩展消息入口，运动脚本与构建产物 `dist/content.js` 完全相同；没有加速或替换腿部动画。
+## Demo
 
-## 安装与运行
+[观看约 30 秒的实际速度演示（MP4）](docs/demo/scroll-crawling.mp4)
 
-需要 Node.js 20.19+ 或 22.12+（推荐当前 LTS），以及 npm。
+[![Web Spider Pet scrolling demo](docs/demo/scroll-crawling.png)](docs/demo/scroll-crawling.mp4)
+
+演示中蜘蛛走向真实 DOM 链接，并在页面滚动时继续使用同一套 IK 支撑与换脚逻辑。视频没有加速，也没有用预制动画替换真实运动。
+
+## What makes it different
+
+- **真实网页空间**：目标来自页面实际的 `a[href]` 和 `getBoundingClientRect()`，不是随便画出来的点。
+- **程序化八足运动**：每条腿使用 two-bone IK，落脚、伸展、换脚和支撑都由真实身体运动触发。
+- **滚动时也在爬**：页面向下滚动时，蜘蛛不会冻结；脚会按网页表面投影继续支撑和迈步。
+- **动画对应真实状态**：停止就是停止，扫描就是扫描，不用“装饰动画”假装程序正在工作。
+- **不挡网页交互**：Overlay 使用 Shadow DOM 和 `pointer-events: none`。
+- **本地运行**：v0.1 没有遥测、后端、AI 或 API Key。
+
+## Quick start
+
+需要 Node.js 20.19+ 或 22.12+（推荐当前 LTS）和 npm。
 
 ```sh
+git clone https://github.com/yuddy666/web-spider-pet.git
+cd web-spider-pet
 npm install
 npm run build
 ```
 
-1. 打开 Chrome 的 `chrome://extensions`。
-2. 开启右上角“开发者模式”。
-3. 点击“加载已解压的扩展程序”，选择本项目的 **`dist/`** 目录。
-4. 打开普通 HTTP / HTTPS 网页。已打开的网页需要刷新。
-5. 把 Web Spider Pet 固定到工具栏，打开扩展弹窗。
-6. 点击“开始探索”。蜘蛛会走访真实链接，当前视口走完后缓慢向下探索，直到页面底部或本轮上限。观察网页 DevTools 控制台的 `[Web Spider Pet]` 日志。
-7. “只走一个链接”保留单次模式；任意时候可以点击“停止”。
+然后：
 
-请在安装了扩展的独立 Chrome 中打开页面；在 Codex 内置浏览器中打开相同 URL，不会自动加载 Chrome 里安装的扩展。
+1. 打开 Chrome / Chromium 的 `chrome://extensions`。
+2. 开启“开发者模式”。
+3. 点击“加载已解压的扩展程序”。
+4. 选择项目中的 `dist/` 目录。
+5. 打开普通 HTTP / HTTPS 网页；已打开的页面需要刷新一次。
+6. 打开 Web Spider Pet 扩展弹窗，点击“开始探索”。
 
-修改源码后重新执行 `npm run build`，在扩展管理页点击“重新加载”，再刷新测试网页。第一版没有扩展热更新。
+“只走一个链接”会让蜘蛛完成一次移动后停下；“开始探索”则会持续走访当前页面里的真实链接，并在需要时慢慢向下探索。
 
-### 本地验收页
+修改源码后重新执行：
+
+```sh
+npm run build
+```
+
+再到扩展管理页重新加载扩展并刷新测试页面。
+
+## Local demo page
 
 ```sh
 npm run demo
 ```
 
-打开终端输出的地址加 `/demo/`（通常是 `http://127.0.0.1:5173/demo/`），再使用扩展弹窗。
-Vite 只提供测试页面；扩展始终从 `dist/` 加载。端口占用时以终端输出为准。
+打开终端给出的地址并进入 `/demo/`。Vite 只提供本地测试页面；浏览器扩展仍然从 `dist/` 加载。
 
-## 当前行为
+## Current behavior
 
-- 页面加载后生成透明 SVG overlay，初始扫描后静止。参考用户提供的视频，蜘蛛采用细长关节腿和几何线框身体。
-- 扫描主文档 `a[href]`，使用 `getBoundingClientRect()` 获取视口坐标。
-- 只选择 HTTP / HTTPS 地址（包括解析到 HTTP / HTTPS 的页内锚点）。过滤空地址、隐藏、视口外以及中心点被遮挡的链接。
-- 点击“开始探索”后，选择最近且本轮尚未抵达的可见链接，每个 DOM 链接每轮最多抵达一次；最多走访 50 个。当前区域走完后边爬边以最高 90 px/s 向下滚动，遇到新链接平滑接回目标追踪。底部无新目标、用户停止、达到上限或页面阻止滚动时结束。
-- 单次模式只走一个链接，优先选择尚未抵达的目标；都走过后允许重新选择。
-- 以最高约 108 个视口像素 / 秒爬行，带启动加速、支撑转移速度变化、转向惯性与到达减速；通常停在链接上方约 30 像素处，靠近边缘时给身体保留 90 px 留白（小视口取一半尺寸）。路径由平滑 heading 驱动，带轻微 steering。
-- 八条腿独立使用 two-bone IK，落地脚尖附着在根文档表面，渲染时投影到视口，髋关节随身体前进；接近舒适伸展范围后四足交替换脚。步态由实际位移与真实转向推进，停止时完整姿态冻结。
-- 紫色框表示附近已经测量到的真实链接（最多 8 个），青色框表示当前目标；虚线连接蜘蛛与目标，只表示选择关系。没有虚构爬虫关系、蛛网历史或网络请求。
-- 移动每帧重新测量目标，跟随布局变化。主页面或内层容器滚动、窗口大小变化时重新扫描。
-- 连续模式目标失效时重新选择；单次模式目标消失、被遮挡或移出视口时停止。手动滚动会重新测量，蜘蛛用同一套表面投影随 scroll 移动，大幅跳滚保留连续姿态。单次抵达后页面改变位置则回到等待。
-- Overlay 使用 Shadow DOM 隔离样式，`pointer-events: none`，不会拦截链接、鼠标或滚动。
-- 弹窗显示真实状态、可见链接数量和目标；页面控制台记录状态变更。
+v0.1 会扫描当前主文档中可见、可达的 HTTP / HTTPS 链接，选择附近尚未抵达的目标并爬过去。连续探索时，每个 DOM 链接在单轮中最多抵达一次，当前上限为 50 个目标。
 
-| 状态 | 当前含义 |
+当当前视口没有新的未探索目标，而页面下方还有内容时，蜘蛛进入 `SCROLLING`：页面以较慢速度向下滚动，同时蜘蛛继续朝下方搜索区域爬行。新的真实链接出现后，它会保留当前朝向、速度和步态状态，平滑切回目标追踪。
+
+当前状态：
+
+| State | Meaning |
 | --- | --- |
-| `IDLE` | 静止，等待用户；没有模拟工作 |
-| `SCANNING` | 正在扫描并测量真实 DOM 链接 |
-| `MOVING` | 正在向选中的链接移动 |
-| `ARRIVED` | 到达链接附近；不表示已访问或请求成功 |
-| `SCROLLING` | 边爬边缓慢滚动寻找新链接，必要时放慢滚动以完成转向 |
+| `IDLE` | 静止等待；没有模拟工作 |
+| `SCANNING` | 扫描并测量真实 DOM 链接 |
+| `MOVING` | 向选中的链接移动 |
+| `ARRIVED` | 到达链接附近，但没有打开链接 |
+| `SCROLLING` | 边爬边缓慢滚动，寻找新的真实链接 |
 
-扫描同步完成，`SCANNING` 通常很短，控制台可以看到。连续模式每次抵达后重新扫描；没有未探索目标时向下滚动。滚动中继续使用同一套 IK 支撑与换脚，步态来自身体相对网页表面的实际运动。所有状态均不表示真实页面访问。
+## What v0.1 does **not** do
 
-## IK 与身体爬行参数
+- 不自动点击或打开链接。
+- 不跨页面自主导航。
+- 不是真正的网络爬虫后端。
+- 不包含 LLM / AI Agent。
+- 不需要也不保存 API Key。
+- 不读取或上传浏览历史。
+- 不伪造 `404 / 403 / 429` 等尚未实现的网络状态。
 
-- 左右对称，前后端两对腿：上段 35 px、下段 43 px；中间两对腿：上段 40 px、下段 46 px。
-- 最大 hip–foot 距离分别为 77.5 / 85.5 px；舒适上限为最大距离的 75%，即约 58.1 / 64.1 px，给另一组换脚保留支撑余量。
-- 两圆相交求膝盖：沿 hip→foot 方向距离 `a=(L1²-L2²+d²)/(2d)`，垂直偏移 `h=√(L1²-a²)`。每条腿保持一致的外弯分支，避免膝盖翻面。
-- 到舒适上限，或脚尖离当前自然落脚位置超过 20 px 时申请迈步。新位置向 heading 前方预探 16 px；转弯外侧加宽、内侧收窄，最多 5 px。
-- A 组：左 2、4 + 右 1、3；B 组：左 1、3 + 右 2、4（编号从前往后）。一组全部落地后另一组才能抬起，至少四脚支撑。
-- 落地脚尖的页面位置不更新；视口投影随根文档滚动更新，髋关节随身体相对页面移动，knee 每次实际移动后由两段定长腿求解。只有悬空脚允许调整轨迹；身体推进受 reach 约束，不能无限伸腿。
-- 每一步用 18 px 等效实际运动完成；转向的等效量为 `abs(Δheading)×26`，允许原地转向换脚。抬脚为平滑插值加最高 5 px 的弧线。
-- 实际换脚进度把身体推进速度调节在基础速度的 56%–100%；身体局部横摆 1.1 px、起伏 0.8 px，只随实际运动变化。
-- 最大转速 1.8 rad/s、转向加速度 6 rad/s²。先转向再加速，不突然旋转。到目标 0.8 px 内视为抵达。
-- 身体、hip、knee、foot、落脚计划统一存储为视口坐标，代表根文档表面位置的投影。根文档滚动时所有位置一起减去实际 scroll delta；落地脚尖的 `foot.y + scrollY` 保持不变，空中脚的 from/to 也跟着投影，不能只修正 foot 或根据 DOM 扫描重置腿。相机位移不计入步态距离，身体相对页面的真实推进 / 转向才计入。
+这部分边界是故意保留的：v0.1 先把“**蜘蛛真的会在网页上爬**”这件事做好。
 
-## 自动向下探索
+## Technical notes
 
-- 仅“开始探索”启动自动滚动；“只走一个链接”不会滚动。每轮 WeakSet 记录已抵达 DOM 元素，相同地址的不同元素仍是不同空间目标。
-- 当前视口没有未探索链接，根文档下方还有内容时进入 SCROLLING。requestAnimationFrame 每帧调用 window.scrollBy，速度最高 90 CSS px/s，帧间隔上限 40 ms，单帧最多约 4 px。身体在上缘附近时按 `(bodyY - 65) / 65`（限制到 0–1）减慢滚动，留出转向和重新向下推进的时间，不能硬推身体回视口。小数位累积，避免取整改变速度。显式 instant 只禁用网页自己的平滑滚动队列，连续小步由 rAF 实现。
-- 滚动期间每 80 ms 重新扫描真实 DOM；新链接可见时停止滚动并选择最近的未探索链接，保留当前速度、朝向、支撑脚与空中换脚进度，没有预设滚动段长或等待计时。滚动事件不重复全量扫描，框位置在绘制时重新测量。
-- 搜索时蜘蛛朝视口高度 65% 的前方搜索点爬行（小视口最低 130 px），使用现有步态、转向、加减速和定长 IK；搜索爬行速度上限 150 px/s，给支撑转移减速后仍抵消页面上移留余量。身体的视口位移 = 相对页面爬行位移 − 实际页面滚动位移。没有独立 walking loop，没有新增特效或抓住边缘拖动页面的动作。
-- body、hip、knee、foot、from/to 同步投影，只消费一次根文档 scroll delta。慢速自动滚动及小幅手动滚动时脚尖真正保持在相同页面像素；DOM bounds 始终来自当前 getBoundingClientRect。大幅手动跳滚时，每次投影平移限制为 12 px，其余位移重新绑定表面原点，保留姿态连续性。这时不保证脚尖仍对应跳滚前的页面像素。内层容器滚动只重测 DOM，脚不附着内层容器。
-- 用户手动滚动时重新测量目标；连续模式失去目标便重选，单次模式停止。停止探索冻结视口姿态并取消移动、滚动和后续选目标的 rAF，不残留 smooth-scroll 请求。
-- 底部条件：document.scrollingElement.scrollHeight - clientHeight - scrollTop <= 1 px，最终再扫描一次；没有未探索可见链接才结束。若仍有高度但连续 0.75 s 无法滚动，也结束并报告原因。
-- 只滚动根文档，不自动滚动内层容器；暂不处理复杂 scroll-snap 页面的控制、不等待底部迟到的无限加载内容。单轮仍保留 50 个链接上限。
+更详细的 IK、步态、滚动坐标投影、状态机和测试说明放在 [`docs/TECHNICAL.md`](docs/TECHNICAL.md)。
 
-## 基本检查
+常用检查：
 
 ```sh
 npm test
@@ -99,51 +108,22 @@ npm run typecheck
 npm run build
 ```
 
-手工检查：
+## Privacy
 
-1. 在本地验收页点击“只走一个链接”，抵达后身体与腿保持静止且地址不变。
-2. 点击“开始探索”，走向不同 DOM 链接，再慢慢向下发现下方链接；底部结束，数量一致且不重复。
-3. 移动期间轻微滚动、缩放或改窗口尺寸，目标位置应重新测量。
-4. 把目标滚出视口：单次模式回到 IDLE，连续模式重选，不走向旧坐标。
-5. 隐藏或移除移动中的目标，单次停止、连续重选；测试无链接长页直到真实底部。
-6. 测试无链接页面、隐藏链接、内层滚动容器和 overlay 区域的正常点击。
-7. 在长的无链接区观察 SCROLLING：脚尖随页面上移，身体继续向下爬，支撑和换脚交替；新链接进入视口后姿态不重置。
-8. 在 MOVING 和 SCROLLING 分别点击“停止探索”，身体与滚动立即停止，关闭弹窗后也不能自行恢复。
+v0.1 完全在本地浏览器中运行，不上传网页内容，也没有 analytics / telemetry。完整说明见 [`PRIVACY.md`](PRIVACY.md)。
 
-## 文件结构
+## Roadmap
 
-```text
-AGENTS.md                   项目原则、阶段范围、Agent 约束
-public/manifest.json        Manifest V3 清单
-src/content/index.ts        扫描、状态、运动、页面事件
-src/content/links.ts        可见链接过滤与真实坐标
-src/content/overlay.ts      SVG 蜘蛛与透明 overlay
-src/content/locomotion.ts   定长 IK、固定脚尖、步态与身体 steering
-tests/locomotion.mjs        骨长、固定脚尖、换脚与转向回归检查
-src/popup/                  工具栏弹窗与控制
-src/shared.ts               状态与消息类型
-popup.html                  弹窗入口
-demo/index.html             本地验收页面
-vite.config.ts              弹窗构建
-vite.content.config.ts      单文件 IIFE content script 构建
-dist/                       可加载扩展（构建生成，不提交）
-```
+接下来计划逐步把“小蜘蛛”从规则驱动的页面宠物变成真正可用的 Web Agent：
 
-## 权限与已知限制
+**browser spider → link navigation → BYOK LLM / Agent → voice input → cross-page exploration → desktop pet**
 
-Content script 静态声明在普通 HTTP / HTTPS 页面运行，只扫描当前主文档。`activeTab` 用于弹窗联系当前标签页。不收集或上传网页信息。
+未来的核心原则不会变：**模型负责决定“去哪、做什么”，现有 locomotion 层负责让蜘蛛真的爬过去。**
 
-- Chrome 内部页面、Chrome Web Store 等受保护页面无法注入；本版没有启用 `file://`。
-- 不遍历 iframe、网页 Shadow DOM；只自动向下滚动根文档，不滚动内层容器。
-- 可见性采用矩形和中心点命中检测；复杂裁剪或多行链接可能被保守地跳过。
-- 静止期间不持续观察 DOM；动态新增的链接在下次探索、打开弹窗、滚动或缩放时重新发现。弹窗轮询只读取状态，不反复启动扫描。
-- 普通网页采用最高常用 z-index；浏览器 top layer（如 modal dialog）、特殊根节点 transform 等页面布局仍可能影响 overlay。
-- `404 / 403 / 429` 等网络状态尚未实现，本阶段不伪造它们。
+## Changelog
 
-## 下一步
+See [`CHANGELOG.md`](CHANGELOG.md).
 
-先在几种真实长网页上调整 IK 步距和转弯姿态，补强复杂布局、scroll-snap 与动态 DOM 下的探索边界。空间理解稳定后再设计受限导航与真实加载状态；不要直接扩展成跨站爬虫。
+## License
 
-长期路线：浏览器蜘蛛 → Web Crawler → macOS 桌宠 → 自然语言 AI Agent → 网络探索可视化。
-
-实现参考：[Chrome content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts)、[Vite 构建文档](https://vite.dev/guide/build.html)。
+MIT License. See [`LICENSE`](LICENSE).

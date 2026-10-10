@@ -1,5 +1,7 @@
 # Web Spider Pet 🕷️
 
+**English** | [简体中文](README.zh-CN.md)
+
 **A tiny spider that actually crawls the web.**  
 *Not just a crawler — the crawler is the spider.*
 
@@ -7,32 +9,32 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![Chromium](https://img.shields.io/badge/Chromium-Manifest%20V3-orange)
 
-Web Spider Pet 把“网络爬虫”这个比喻重新变回一只真的会爬的蜘蛛：它读取真实网页中的链接位置，用程序化 IK 腿在页面上移动，当前区域探索完以后会继续一边爬、一边慢慢向下滚动寻找新的链接。
+Web Spider Pet turns the “web crawler” metaphor back into a literal spider. It reads the positions of real links on a page, moves across the page with procedural IK legs, and keeps crawling while the page slowly scrolls downward to discover more links.
 
-v0.1 还是一个 **Chromium 浏览器扩展原型**。它现在会在页面上探索，但**不会自动点击链接、不会跨页面导航、没有 AI，也不会把网页内容上传到服务器**。
+v0.1 is still a **Chromium browser extension prototype**. It can explore the current page, but it **does not click links automatically, navigate across pages, use AI, or upload page content to a server**.
 
 > It crawls the page, not the network — yet.
 
 ## Demo
 
-[观看约 30 秒的实际速度演示（MP4）](docs/demo/scroll-crawling.mp4)
+[Watch the ~30-second real-time demo (MP4)](docs/demo/scroll-crawling.mp4)
 
 [![Web Spider Pet scrolling demo](docs/demo/scroll-crawling.png)](docs/demo/scroll-crawling.mp4)
 
-演示中蜘蛛走向真实 DOM 链接，并在页面滚动时继续使用同一套 IK 支撑与换脚逻辑。视频没有加速，也没有用预制动画替换真实运动。
+In the demo, the spider moves toward real DOM links and keeps using the same IK support and stepping logic while the page scrolls. The footage is not sped up, and the locomotion is not replaced by a pre-baked animation.
 
 ## What makes it different
 
-- **真实网页空间**：目标来自页面实际的 `a[href]` 和 `getBoundingClientRect()`，不是随便画出来的点。
-- **程序化八足运动**：每条腿使用 two-bone IK，落脚、伸展、换脚和支撑都由真实身体运动触发。
-- **滚动时也在爬**：页面向下滚动时，蜘蛛不会冻结；脚会按网页表面投影继续支撑和迈步。
-- **动画对应真实状态**：停止就是停止，扫描就是扫描，不用“装饰动画”假装程序正在工作。
-- **不挡网页交互**：Overlay 使用 Shadow DOM 和 `pointer-events: none`。
-- **本地运行**：v0.1 没有遥测、后端、AI 或 API Key。
+- **Real page geometry** — targets come from actual `a[href]` elements and `getBoundingClientRect()`, not from decorative points.
+- **Procedural eight-leg locomotion** — every leg uses two-bone IK, with stepping, reach, support, and foot placement driven by real body motion.
+- **It keeps crawling while the page scrolls** — the spider does not freeze during downward exploration; its feet stay projected onto the page surface and continue supporting the body.
+- **Animation reflects real state** — stopped means stopped, scanning means scanning. No fake “busy” animation is used to pretend the program is doing work.
+- **It does not block the page** — the overlay is isolated with Shadow DOM and uses `pointer-events: none`.
+- **Local-first** — v0.1 has no telemetry, backend, AI, or API-key requirement.
 
 ## Quick start
 
-需要 Node.js 20.19+ 或 22.12+（推荐当前 LTS）和 npm。
+Requires Node.js 20.19+ or 22.12+ (current LTS recommended) and npm.
 
 ```sh
 git clone https://github.com/yuddy666/web-spider-pet.git
@@ -41,24 +43,24 @@ npm install
 npm run build
 ```
 
-然后：
+Then:
 
-1. 打开 Chrome / Chromium 的 `chrome://extensions`。
-2. 开启“开发者模式”。
-3. 点击“加载已解压的扩展程序”。
-4. 选择项目中的 `dist/` 目录。
-5. 打开普通 HTTP / HTTPS 网页；已打开的页面需要刷新一次。
-6. 打开 Web Spider Pet 扩展弹窗，点击“开始探索”。
+1. Open `chrome://extensions` in Chrome / Chromium.
+2. Enable **Developer mode**.
+3. Click **Load unpacked**.
+4. Select the project's `dist/` directory.
+5. Open a normal HTTP / HTTPS page. Refresh pages that were already open.
+6. Open the Web Spider Pet extension popup and click **Start exploring**.
 
-“只走一个链接”会让蜘蛛完成一次移动后停下；“开始探索”则会持续走访当前页面里的真实链接，并在需要时慢慢向下探索。
+**Single link** makes the spider complete one move and stop. **Start exploring** continuously visits real links on the current page and slowly explores downward when needed.
 
-修改源码后重新执行：
+After changing the source, rebuild with:
 
 ```sh
 npm run build
 ```
 
-再到扩展管理页重新加载扩展并刷新测试页面。
+Then reload the extension from the extensions page and refresh the test page.
 
 ## Local demo page
 
@@ -66,41 +68,39 @@ npm run build
 npm run demo
 ```
 
-打开终端给出的地址并进入 `/demo/`。Vite 只提供本地测试页面；浏览器扩展仍然从 `dist/` 加载。
+Open the address printed by Vite and go to `/demo/`. Vite only serves the local test page; the browser extension is still loaded from `dist/`.
 
 ## Current behavior
 
-v0.1 会扫描当前主文档中可见、可达的 HTTP / HTTPS 链接，选择附近尚未抵达的目标并爬过去。连续探索时，每个 DOM 链接在单轮中最多抵达一次，当前上限为 50 个目标。
+v0.1 scans visible, reachable HTTP / HTTPS links in the current main document, chooses nearby targets that have not been reached yet, and crawls toward them. In continuous exploration, each DOM link is reached at most once per run, with a current limit of 50 targets.
 
-当当前视口没有新的未探索目标，而页面下方还有内容时，蜘蛛进入 `SCROLLING`：页面以较慢速度向下滚动，同时蜘蛛继续朝下方搜索区域爬行。新的真实链接出现后，它会保留当前朝向、速度和步态状态，平滑切回目标追踪。
-
-当前状态：
+When the current viewport has no unexplored targets but more content exists below, the spider enters `SCROLLING`: the page moves downward slowly while the spider keeps crawling toward a lower search area. When a new real link appears, it preserves its heading, speed, and gait state and smoothly returns to target tracking.
 
 | State | Meaning |
 | --- | --- |
-| `IDLE` | 静止等待；没有模拟工作 |
-| `SCANNING` | 扫描并测量真实 DOM 链接 |
-| `MOVING` | 向选中的链接移动 |
-| `ARRIVED` | 到达链接附近，但没有打开链接 |
-| `SCROLLING` | 边爬边缓慢滚动，寻找新的真实链接 |
+| `IDLE` | Waiting in place; no simulated work |
+| `SCANNING` | Scanning and measuring real DOM links |
+| `MOVING` | Moving toward the selected link |
+| `ARRIVED` | Reached the link area, but did not open it |
+| `SCROLLING` | Crawling while slowly scrolling to find new real links |
 
 ## What v0.1 does **not** do
 
-- 不自动点击或打开链接。
-- 不跨页面自主导航。
-- 不是真正的网络爬虫后端。
-- 不包含 LLM / AI Agent。
-- 不需要也不保存 API Key。
-- 不读取或上传浏览历史。
-- 不伪造 `404 / 403 / 429` 等尚未实现的网络状态。
+- It does not automatically click or open links.
+- It does not autonomously navigate across pages.
+- It is not a backend web crawler yet.
+- It does not include an LLM / AI Agent.
+- It does not require or store an API key.
+- It does not read or upload browsing history.
+- It does not fake unimplemented network states such as `404 / 403 / 429`.
 
-这部分边界是故意保留的：v0.1 先把“**蜘蛛真的会在网页上爬**”这件事做好。
+Those boundaries are intentional: v0.1 focuses on making one idea work well — **the spider actually crawls across the page**.
 
 ## Technical notes
 
-更详细的 IK、步态、滚动坐标投影、状态机和测试说明放在 [`docs/TECHNICAL.md`](docs/TECHNICAL.md)。
+Detailed notes on IK, gait, scroll-coordinate projection, the state machine, and testing live in [`docs/TECHNICAL.md`](docs/TECHNICAL.md).
 
-常用检查：
+Common checks:
 
 ```sh
 npm test
@@ -110,15 +110,15 @@ npm run build
 
 ## Privacy
 
-v0.1 完全在本地浏览器中运行，不上传网页内容，也没有 analytics / telemetry。完整说明见 [`PRIVACY.md`](PRIVACY.md)。
+v0.1 runs entirely in the local browser. It does not upload page content and has no analytics or telemetry. See [`PRIVACY.md`](PRIVACY.md) for details.
 
 ## Roadmap
 
-接下来计划逐步把“小蜘蛛”从规则驱动的页面宠物变成真正可用的 Web Agent：
+The plan is to gradually grow the spider from a rule-driven page pet into a real Web Agent:
 
 **browser spider → link navigation → BYOK LLM / Agent → voice input → cross-page exploration → desktop pet**
 
-未来的核心原则不会变：**模型负责决定“去哪、做什么”，现有 locomotion 层负责让蜘蛛真的爬过去。**
+The core principle will stay the same: **the model decides where to go and what to do; the existing locomotion layer makes the spider physically crawl there.**
 
 ## Changelog
 

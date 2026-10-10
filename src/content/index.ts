@@ -25,6 +25,8 @@ function startSpider() {
   let scrollRemainder = 0;
   let blockedScrollTime = 0;
   let previousTime = 0;
+  let surfaceScroll = { x: window.scrollX, y: window.scrollY };
+  let searchX = position.x;
   const scrollSpeed = 90;
   const sessionLimit = 50;
 
@@ -65,9 +67,20 @@ function startSpider() {
     return root ? Math.max(0, root.scrollHeight - root.clientHeight - root.scrollTop) : 0;
   }
 
+  function followPage() {
+    const delta = { x: window.scrollX - surfaceScroll.x, y: window.scrollY - surfaceScroll.y };
+    surfaceScroll = { x: window.scrollX, y: window.scrollY };
+    if (state !== 'MOVING' && state !== 'SCROLLING' && !continuous) return;
+    // Normal slow scroll preserves root-document footholds exactly. For abrupt
+    // wheel/page jumps, reattach the surface origin instead of teleporting the
+    // whole spider offscreen. Keep every joint/step plan in the same frame.
+    const scale = Math.min(1, 12 / Math.max(12, Math.hypot(delta.x, delta.y)));
+    motion.followSurface({ x: delta.x * scale, y: delta.y * scale });
+  }
+
   function beginScroll() {
-    motion.freeze();
     target = null;
+    searchX = Math.max(90, Math.min(innerWidth - 90, position.x));
     previousScrollTime = performance.now();
     lastScrollScan = previousScrollTime;
     scrollRemainder = 0;
@@ -81,6 +94,7 @@ function startSpider() {
     if (!continuous || state !== 'SCROLLING') return;
     const dt = Math.min((time - previousScrollTime) / 1000, 0.04);
     previousScrollTime = time;
+    followPage();
     // Re-scan while the document moves, including pages with no links at all.
     if (time - lastScrollScan >= 80 || remainingPage() <= 1) {
       scan(false);
@@ -88,7 +102,10 @@ function startSpider() {
       if (targets.some(item => !visited.has(item.element))) { chooseTarget(true); return; }
       if (remainingPage() <= 1) { stop(`已到达页面底部，共到达 ${arrivedLinks} 个链接`); return; }
     }
-    const budget = scrollSpeed * dt + scrollRemainder;
+    // Ease scrolling near the top while the spider turns downwards. This keeps
+    // it visible without clamping its body or resetting planted feet.
+    const visibility = Math.max(0, Math.min(1, (position.y - 65) / 65));
+    const budget = scrollSpeed * visibility * dt + scrollRemainder;
     const pixels = Math.floor(budget);
     scrollRemainder = budget - pixels;
     const before = window.scrollY;
@@ -97,7 +114,14 @@ function startSpider() {
       // Each frame moves only a few pixels; rAF supplies the smooth motion.
       window.scrollBy({ left: 0, top: Math.min(pixels, remainingPage()), behavior: 'instant' });
     }
-    blockedScrollTime = window.scrollY > before ? 0 : blockedScrollTime + dt;
+    const scrolled = window.scrollY - before;
+    followPage();
+    // The destination is on the moving document surface, not an animation
+    // loop. A forward crawl counteracts the page's upward motion; speed,
+    // turning and foot transfers remain governed by the existing IK solver.
+    motion.advance({ x: searchX, y: Math.max(130, innerHeight * 0.65) }, dt, 150);
+    draw();
+    blockedScrollTime = scrolled > 0 || visibility === 0 ? 0 : blockedScrollTime + dt;
     if (blockedScrollTime >= 0.75) { stop('页面阻止了向下滚动，探索已停止'); return; }
     scrollFrame = requestAnimationFrame(scrollDown);
   }
@@ -134,6 +158,7 @@ function startSpider() {
   function explore(keepExploring: boolean) {
     stop('准备探索');
     continuous = keepExploring;
+    surfaceScroll = { x: window.scrollX, y: window.scrollY };
     arrivedLinks = 0;
     if (continuous) visited = new WeakSet();
     chooseTarget();
@@ -141,9 +166,9 @@ function startSpider() {
 
   function move(time: number) {
     if (!target) return;
+    followPage();
     const updated = measureLink(target.element);
     if (!updated) {
-      motion.freeze();
       if (continuous) chooseTarget();
       else stop('目标已移除、被遮挡或离开视口，探索已停止');
       return;
@@ -152,7 +177,7 @@ function startSpider() {
     const arrived = motion.advance(target.point, Math.min((time - previousTime) / 1000, 0.04));
     previousTime = time;
     if (arrived) {
-      motion.freeze();
+      if (!continuous) motion.freeze();
       visited.add(target.element);
       arrivedLinks += 1;
       movementFrame = 0;
@@ -175,14 +200,15 @@ function startSpider() {
     layoutFrame = requestAnimationFrame(() => {
       layoutFrame = 0;
       // The scrolling loop owns its 80 ms scans; avoid scanning all anchors
-      // separately for every scroll event. The spider's viewport pose is fixed.
+      // separately for every scroll event. Camera motion is consumed once,
+      // whether the scroll came from our loop or from the user's wheel.
+      followPage();
       if (state !== 'SCROLLING') scan(false);
       if (target) {
         const updated = measureLink(target.element);
         if (!updated) {
           if (continuous) {
             cancelAnimationFrame(movementFrame);
-            motion.freeze();
             chooseTarget();
           } else stop('目标已离开可见区域，探索已停止');
         }

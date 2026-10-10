@@ -88,7 +88,22 @@ export function createLocomotion(position: Point) {
     get heading() { return heading; },
     get speed() { return speed; },
     freeze() { speed = 0; turnVelocity = 0; },
-    advance(destination: Point, dt: number) {
+    followSurface(delta: Point) {
+      // Stored positions are viewport projections of root-document footholds.
+      // Move the whole pose, including airborne plans, exactly once per scroll.
+      // This is camera motion, not travel: it cannot advance the gait itself.
+      position.x -= delta.x;
+      position.y -= delta.y;
+      center.x -= delta.x;
+      center.y -= delta.y;
+      for (const leg of legs) {
+        for (const point of [leg.hip, leg.knee, leg.foot, leg.from, leg.to]) {
+          point.x -= delta.x;
+          point.y -= delta.y;
+        }
+      }
+    },
+    advance(destination: Point, dt: number, cruisingSpeed = 108) {
       const remaining = distance(position, destination);
       if (remaining <= 0.8) return true;
       const desired = Math.atan2(destination.y - position.y, destination.x - position.x) + Math.PI / 2;
@@ -101,7 +116,7 @@ export function createLocomotion(position: Point) {
       // Weight transfer slows the body while feet lift, then restores propulsion.
       const pace = 0.78 + 0.22 * Math.cos(swingPhase * Math.PI * 2);
       const alignment = Math.pow(Math.max(0, Math.cos(error)), 2);
-      const wantedSpeed = Math.min(108 * pace * alignment, Math.sqrt(2 * 125 * remaining));
+      const wantedSpeed = Math.min(cruisingSpeed * pace * alignment, Math.sqrt(2 * 125 * remaining));
       speed += clamp(wantedSpeed - speed, -220 * dt, 160 * dt);
       const step = Math.min(speed * dt, remaining);
       const nextHeading = heading + rotation;
